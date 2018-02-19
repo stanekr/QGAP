@@ -1,8 +1,8 @@
 #ifndef DATA_H
 #define DATA_H
+#include <sstream>   // stringstream
 #include "json.h"
 #include "QGAP.h"
-#include <sstream>   // stringstream
 
 class DataManager
 {

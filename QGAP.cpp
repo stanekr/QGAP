@@ -45,6 +45,8 @@ int QuadraticGAP::Qopt (void)
    int           i, j;
    int           cur_numrows, cur_numcols;
 
+   vector < vector <double>> q(numrows, vector<double>(numcols)); // for debug
+
    // Initialize the CPLEX environment
    env = CPXopenCPLEX(&status);
    if (env == NULL) 
@@ -89,6 +91,10 @@ int QuadraticGAP::Qopt (void)
    {  fprintf(stderr, "Failed to copy problem data.\n");
       goto TERMINATE;
    }
+
+   for(i=0;i<numrows;i++)
+      for(j=0;j<i;j++)
+         q[i][j] = qmatval[i];
 
    status = CPXcopyquad(env, lp, qmatbeg, qmatcnt, qmatind, qmatval);
    if (status) 
@@ -153,7 +159,7 @@ TERMINATE:
    }
 
    // Free up the problem data arrays, if necessary.
-   free_and_null((char **)&probname);
+   // free_and_null((char **)&probname);  // gives an error, don't know why
    free_and_null((char **)&obj);
    free_and_null((char **)&rhs);
    free_and_null((char **)&sense);
