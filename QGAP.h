@@ -1,16 +1,18 @@
 #ifndef QGAP_H
 #define QGAP_H
 
-#include "c:\IBM\ILOG\CPLEX_Studio1263\cplex\include\ilcplex/cplex.h"
+#include "c:/IBM/ILOG/CPLEX_Studio1263/cplex/include/ilcplex/cplex.h"
 #include <iostream>
 #include <fstream>   // ifstream
 #include <string>
+#include <vector>
 
 using namespace std;
 
 class Config
 {
 public:
+   string datapath;  // path to instances directory
    string datafile;  // the instance to solve
    int isverbose;    // console output detail
 };
