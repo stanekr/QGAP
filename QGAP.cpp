@@ -102,6 +102,13 @@ int QuadraticGAP::Qopt (void)
       goto TERMINATE;
    }
 
+   // Finally, write a copy of the problem to a file. 
+   status = CPXwriteprob(env, lp, "qgap.lp", NULL);
+   if (status)
+   {  fprintf(stderr, "Failed to write LP to disk.\n");
+      goto TERMINATE;
+   }
+
    // Optimize the problem and obtain solution.
    status = CPXqpopt(env, lp);
    if (status) 
@@ -130,13 +137,6 @@ int QuadraticGAP::Qopt (void)
       printf("Column %d:  Value = %10f  Reduced cost = %10f\n",
          j, x[j], dj[j]);
     */
-
-   // Finally, write a copy of the problem to a file. 
-   status = CPXwriteprob(env, lp, "qpex1.lp", NULL);
-   if (status) 
-   {  fprintf(stderr, "Failed to write LP to disk.\n");
-      goto TERMINATE;
-   }
 
 TERMINATE:
    // Free up the problem as allocated by CPXcreateprob, if necessary
