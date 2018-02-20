@@ -1,5 +1,10 @@
 #include "QGAP.h"
 
+#define NUMROWS    2
+#define NUMCOLS    3
+#define NUMNZ      6
+#define NUMQNZ     7
+
 QuadraticGAP::QuadraticGAP()
 {
    conf = new Config();
@@ -45,7 +50,7 @@ int QuadraticGAP::Qopt (void)
    int           i, j;
    int           cur_numrows, cur_numcols;
 
-   vector < vector <double>> q(numrows, vector<double>(numcols)); // for debug
+   vector < vector <double>> q(m, vector<double>(n)); // for debug
 
    // Initialize the CPLEX environment
    env = CPXopenCPLEX(&status);
@@ -84,17 +89,12 @@ int QuadraticGAP::Qopt (void)
 
    // Now copy the LP part of the problem data into the lp
    status = CPXcopylp(env, lp, numcols, numrows, objsen, obj, rhs,
-      sense, matbeg, matcnt, matind, matval,
-      lb, ub, NULL);
+      sense, matbeg, matcnt, matind, matval, lb, ub, NULL);
 
    if (status) 
    {  fprintf(stderr, "Failed to copy problem data.\n");
       goto TERMINATE;
    }
-
-   for(i=0;i<numrows;i++)
-      for(j=0;j<i;j++)
-         q[i][j] = qmatval[i];
 
    status = CPXcopyquad(env, lp, qmatbeg, qmatcnt, qmatind, qmatval);
    if (status) 
@@ -177,7 +177,6 @@ TERMINATE:
    return (status);
 }  
 
-
 int QuadraticGAP::setproblemdata(char **probname_p, int *numcols_p, int *numrows_p,
    int *objsen_p, double **obj_p, double **rhs_p,
    char **sense_p, int **matbeg_p, int **matcnt_p,
@@ -185,7 +184,7 @@ int QuadraticGAP::setproblemdata(char **probname_p, int *numcols_p, int *numrows
    double **ub_p, int **qmatbeg_p, int **qmatcnt_p,
    int **qmatind_p, double **qmatval_p)
 {
-   int i,j,h,k,ij,idRow;
+   int i,j,h,k,ij,hk,idRow;
 
    char     *zprobname = NULL;   
    double   *zobj = NULL;
@@ -286,13 +285,15 @@ int QuadraticGAP::setproblemdata(char **probname_p, int *numcols_p, int *numrows
    for (i = 0; i<m; i++)
       for (j = 0; j<n; j++)
       {
+         hk = 0;
          zqmatbeg[ij] = numNZ;
          for (h = 0; h<m; h++)
             for (k = 0; k<n; k++)
             {
-               zqmatind[numNZ] = ij;
+               zqmatind[numNZ] = hk;
                zqmatval[numNZ] = cqd[i][h]*cqf[j][k];
                numNZ++;
+               hk++;
             }
          zqmatcnt[ij] = numNZ - zqmatbeg[ij];
          ij++;
