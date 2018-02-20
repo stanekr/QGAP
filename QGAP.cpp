@@ -1,10 +1,5 @@
 #include "QGAP.h"
 
-#define NUMROWS    2
-#define NUMCOLS    3
-#define NUMNZ      6
-#define NUMQNZ     7
-
 QuadraticGAP::QuadraticGAP()
 {
    conf = new Config();
