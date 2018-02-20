@@ -1,10 +1,5 @@
 #include "QGAP.h"
 
-#define NUMROWS    2
-#define NUMCOLS    3
-#define NUMNZ      6
-#define NUMQNZ     7
-
 QuadraticGAP::QuadraticGAP()
 {
    conf = new Config();
@@ -102,10 +97,11 @@ int QuadraticGAP::Qopt (void)
       goto TERMINATE;
    }
 
-   // Finally, write a copy of the problem to a file. 
+   // Write a copy of the problem to a file. 
    status = CPXwriteprob(env, lp, "qgap.lp", NULL);
    if (status)
-   {  fprintf(stderr, "Failed to write LP to disk.\n");
+   {
+      fprintf(stderr, "Failed to write LP to disk.\n");
       goto TERMINATE;
    }
 
@@ -184,7 +180,7 @@ int QuadraticGAP::setproblemdata(char **probname_p, int *numcols_p, int *numrows
    double **ub_p, int **qmatbeg_p, int **qmatcnt_p,
    int **qmatind_p, double **qmatval_p)
 {
-   int i,j,h,k,ij,hk,idRow;
+   int i,j,h,k,ij,hk,idRow,idCol;
 
    char     *zprobname = NULL;   
    double   *zobj = NULL;
@@ -235,7 +231,7 @@ int QuadraticGAP::setproblemdata(char **probname_p, int *numcols_p, int *numrows
 
    zprobname = (char*) name.c_str();
 
-   // linear objective costs
+   // -------------------------- linear objective costs
    ij = 0;
    for(i=0;i<m;i++)
       for(j=0;j<n;j++)
@@ -246,40 +242,7 @@ int QuadraticGAP::setproblemdata(char **probname_p, int *numcols_p, int *numrows
          ij++;
       }
 
-   // Assignment constraints.  
-   idRow = 0;
-   numNZ = 0;  
-   for (j = 0; j<n; j++)
-   {
-      zmatbeg[idRow] = numNZ;
-      zsense[0] = 'E';
-      zrhs[0] = 1.0;
-      for (i = 0; i<m; i++)
-      {
-         zmatind[i] = j + n*i;
-         zmatval[i] = 1.0;
-         numNZ++;
-      }
-      idRow++;
-   }
-
-   // Capacity constraints.  
-   for (i = 0; i<m; i++)
-   {
-      zmatbeg[idRow] = numNZ;
-      zsense[0] = 'L';
-      zrhs[0] = cap[i];
-      for (j = 0; j<n; j++)
-      {
-         zmatind[numNZ] = j + n*i;
-         zmatval[numNZ] =  req[i][j];
-         numNZ++;
-      }
-      idRow++;
-   }
-   zmatbeg[idRow] = numNZ;
-
-   // quadratic matrix
+   // -------------------------- quadratic cost matrix
    ij = 0;
    numNZ = 0;
    for (i = 0; i<m; i++)
@@ -291,13 +254,44 @@ int QuadraticGAP::setproblemdata(char **probname_p, int *numcols_p, int *numrows
             for (k = 0; k<n; k++)
             {
                zqmatind[numNZ] = hk;
-               zqmatval[numNZ] = cqd[i][h]*cqf[j][k];
+               zqmatval[numNZ] = cqd[i][h] * cqf[j][k];
                numNZ++;
                hk++;
             }
          zqmatcnt[ij] = numNZ - zqmatbeg[ij];
          ij++;
       }
+
+   // -------------------------- constraints section
+   idCol = 0;
+   numNZ = 0;  
+   for (i = 0; i<m; i++)
+      for (j = 0; j<n; j++)
+      {
+         zmatbeg[idCol] = numNZ;
+
+         zmatind[numNZ] = j;           // Assignment constraint
+         zmatval[numNZ] = 1.0; 
+         numNZ++;
+
+         zmatind[numNZ] = n + i;       // Capacity constraint
+         zmatval[numNZ] = req[i][j];
+         numNZ++;
+
+         zmatcnt[idCol] = numNZ - zmatbeg[idCol];
+         idCol++;
+      }
+
+   // -------------------------- rhs
+   for(j=0;j<n;j++)
+   {  zsense[j] = 'E';
+      zrhs[j]   = 1.0;
+   }
+
+   for(i=0;i<m;i++)
+   {  zsense[n+i] = 'L';
+      zrhs[n+i]   = cap[i];
+   }
 
 TERMINATE:
    if (status) 
