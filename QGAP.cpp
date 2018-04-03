@@ -105,6 +105,15 @@ int QuadraticGAP::Qopt (void)
       goto TERMINATE;
    }
 
+   // 2: Searches for a solution that satisfies first-order optimality conditions, but is not necessarily globally optimal.
+   // 3: Searches for a globally optimal solution to a nonconvex model; changes problem type to MIQP if necessary.
+   status = CPXsetintparam(env, CPXPARAM_OptimalityTarget, 2);
+   if (status)
+   {
+      fprintf(stderr, "Failure to reset optimality target, error %d.\n", status);
+      goto TERMINATE;
+   }
+
    // Optimize the problem and obtain solution.
    status = CPXqpopt(env, lp);
    if (status) 
