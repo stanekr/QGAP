@@ -1,4 +1,9 @@
 #include "QGAP.h"
+#include <Eigen/Core>
+#include <SymEigsSolver.h>  // Also includes <MatOp/DenseSymMatProd.h>
+
+using Eigen::MatrixXd;
+using namespace Spectra;
 
 QuadraticGAP::QuadraticGAP()
 {
@@ -34,10 +39,10 @@ int QuadraticGAP::Qopt (void)
    // optimization results
    int      solstat;
    double   objval;
-   double   x  = NULL;
-   double   pi = NULL;
-   double   slack = NULL;
-   double   dj = NULL;
+   double   *x  = NULL;
+   double   *pi = NULL;
+   double   *slack = NULL;
+   double   *dj = NULL;
 
    CPXENVptr     env = NULL;
    CPXLPptr      lp = NULL;
@@ -107,7 +112,9 @@ int QuadraticGAP::Qopt (void)
 
    // 2: Searches for a solution that satisfies first-order optimality conditions, but is not necessarily globally optimal.
    // 3: Searches for a globally optimal solution to a nonconvex model; changes problem type to MIQP if necessary.
-   status = CPXsetintparam(env, CPXPARAM_OptimalityTarget, 2);
+   int optimalityTarget = 3;
+   cout << "Setting optimality target to "<< optimalityTarget << endl;
+   status = CPXsetintparam(env, CPXPARAM_OptimalityTarget, optimalityTarget);
    if (status)
    {
       fprintf(stderr, "Failure to reset optimality target, error %d.\n", status);
@@ -121,7 +128,7 @@ int QuadraticGAP::Qopt (void)
       goto TERMINATE;
    }
 
-   status = CPXsolution(env, lp, &solstat, &objval, &x, &pi, &slack, &dj);
+   status = CPXsolution(env, lp, &solstat, &objval, x, pi, slack, dj);
    if (status) 
    {  fprintf(stderr, "Failed to obtain solution.\n");
       goto TERMINATE;
@@ -271,6 +278,10 @@ int QuadraticGAP::setproblemdata(char **probname_p, int *numcols_p, int *numrows
          ij++;
       }
 
+   // -------------------------- find eigenvalues
+   double evalue = eigenValues(zqmatval,i*j);
+   cout << "Eigenvalue: " << evalue << endl;
+
    // -------------------------- constraints section
    idCol = 0;
    numNZ = 0;  
@@ -344,6 +355,51 @@ TERMINATE:
    return (status);
 
 }  // END setproblemdata
+
+double QuadraticGAP::eigenValues(double *qmatval, int n)
+{  int i,j,k;
+
+   Eigen::MatrixXd m = Eigen::MatrixXd(n, n);
+   m(0, 0) = 1; m(0, 1) = 4; m(0, 2) = 6; m(0, 3) = 4; m(0, 4) = 8; m(0, 5) = 12;
+   m(1, 0) = 4; m(1, 1) = 1; m(1, 2) = 4; m(1, 3) = 8; m(1, 4) = 4; m(1, 5) = 8;
+   m(2, 0) = 6; m(2, 1) = 4; m(2, 2) = 1; m(2, 3) = 12; m(2, 4) = 8; m(2, 5) = 4;
+   m(3, 0) = 4; m(3, 1) = 8; m(3, 2) = 12; m(3, 3) = 1; m(3, 4) = 4; m(3, 5) = 6;
+   m(4, 0) = 8; m(4, 1) = 4; m(4, 2) = 8; m(4, 3) = 4; m(4, 4) = 1; m(4, 5) = 4;
+   m(5, 0) = 12; m(5, 1) = 8; m(5, 2) = 4; m(5, 3) = 6; m(5, 4) = 4; m(5, 5) = 1;
+
+   Eigen::MatrixXd mat = Eigen::MatrixXd(n, n);
+   k = 0;
+   for(i=0;i<n;i++)
+      for(j=0;j<n;j++)
+      {  mat(i,j) = qmatval[k];
+         if(mat(i,j) != m(i,j))
+            cout << "ouch" << endl;
+         k++;
+      }
+
+   Eigen::MatrixXd M = m + m.transpose();
+   // Construct matrix operation object 
+   DenseSymMatProd<double> op(M);
+
+   /*
+   Construct eigen solver object, requesting the smallest / largest eigenvalues SMALLEST_MAGN / LARGEST_ALGE
+   Parameters
+   op_  Pointer to the matrix operation object, which should implement the matrix - vector multiplication operation of A: calculating Av for any vector v. Users could either create the object from the wrapper class such as DenseSymMatProd, or define their own that implements all the public member functions as in DenseSymMatProd.
+   nev_ Number of eigenvalues requested. This should satisfy 1<=nev<=n-1, where n is the size of matrix.
+   ncv_ Parameter that controls the convergence speed of the algorithm. Typically a larger ncv_ means faster convergence, but it may also result in greater memory use and more matrix operations in each iteration.This parameter must satisfy nev<ncv<=n, and is advised to take ncv>=2nev.
+   */
+
+   SymEigsSolver< double, SMALLEST_ALGE, DenseSymMatProd<double> > eigs(&op, 1, n);
+   // Initialize and compute
+   eigs.init();
+   int nconv = eigs.compute();
+   // Retrieve results
+   Eigen::VectorXd evalues;
+   if (eigs.info() == SUCCESSFUL)
+      evalues = eigs.eigenvalues();
+   std::cout << "Smallest eigenvalues:" << evalues << std::endl;
+   return evalues[0];
+}
 
 // This simple routine frees up the pointer *ptr, and sets *ptr to NULL
 void free_and_null(char **ptr)

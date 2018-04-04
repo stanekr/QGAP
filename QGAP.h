@@ -44,6 +44,7 @@ private:
       int **matind_p, double **matval_p, double **lb_p,
       double **ub_p, int **qmatbeg_p, int **qmatcnt_p,
       int **qmatind_p, double **qmatval_p);
+   double eigenValues(double *qmatval, int n);
 };
 
 // free
