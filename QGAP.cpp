@@ -35,14 +35,15 @@ int QuadraticGAP::Qopt (void)
    int      *qmatcnt = NULL;
    int      *qmatind = NULL;
    double   *qmatval = NULL;
+   char     *ctype = NULL;
 
    // optimization results
    int      solstat;
    double   objval;
    double   *x  = NULL;
-   double   *pi = NULL;
+   //double   *pi = NULL;
    double   *slack = NULL;
-   double   *dj = NULL;
+   //double   *dj = NULL;
 
    CPXENVptr     env = NULL;
    CPXLPptr      lp = NULL;
@@ -72,7 +73,7 @@ int QuadraticGAP::Qopt (void)
    // Fill in the data for the problem.
    status = setproblemdata(&probname, &numcols, &numrows, &objsen, &obj,
       &rhs, &sense, &matbeg, &matcnt, &matind,
-      &matval, &lb, &ub, &qmatbeg, &qmatcnt,
+      &matval, &lb, &ub, &ctype, &qmatbeg, &qmatcnt,
       &qmatind, &qmatval);
 
    if (status) 
@@ -102,11 +103,17 @@ int QuadraticGAP::Qopt (void)
       goto TERMINATE;
    }
 
+   // Now copy the ctype array
+   status = CPXcopyctype(env, lp, ctype);
+   if (status) 
+   {  fprintf(stderr, "Failed to copy ctype\n");
+      goto TERMINATE;
+   }
+
    // Write a copy of the problem to a file. 
    status = CPXwriteprob(env, lp, "qgap.lp", NULL);
    if (status)
-   {
-      fprintf(stderr, "Failed to write LP to disk.\n");
+   {  fprintf(stderr, "Failed to write LP to disk.\n");
       goto TERMINATE;
    }
 
@@ -116,19 +123,28 @@ int QuadraticGAP::Qopt (void)
    cout << "Setting optimality target to "<< optimalityTarget << endl;
    status = CPXsetintparam(env, CPXPARAM_OptimalityTarget, optimalityTarget);
    if (status)
-   {
-      fprintf(stderr, "Failure to reset optimality target, error %d.\n", status);
+   {  fprintf(stderr, "Failure to reset optimality target, error %d.\n", status);
       goto TERMINATE;
    }
 
    // Optimize the problem and obtain solution.
    status = CPXqpopt(env, lp);
+   //status = CPXchgprobtype(env, lp, CPXPROB_MIQCP);
+   //status = CPXmipopt(env, lp);
    if (status) 
    {  fprintf(stderr, "Failed to optimize QP.\n");
       goto TERMINATE;
    }
 
-   status = CPXsolution(env, lp, &solstat, &objval, x, pi, slack, dj);
+   cur_numrows = CPXgetnumrows(env, lp);
+   cur_numcols = CPXgetnumcols(env, lp);
+
+   x     = (double *)malloc(cur_numcols * sizeof(double));
+   slack = (double *)malloc(cur_numrows * sizeof(double));
+   //dj = (double *)malloc(cur_numcols * sizeof(double));
+   //pi = (double *)malloc(cur_numrows * sizeof(double));
+
+   status = CPXsolution(env, lp, &solstat, &objval, x, NULL, slack, NULL);
    if (status) 
    {  fprintf(stderr, "Failed to obtain solution.\n");
       goto TERMINATE;
@@ -137,18 +153,10 @@ int QuadraticGAP::Qopt (void)
    // Write the output to the screen.
    cout << "\nSolution status = " << solstat << endl;
    cout << "Solution value  = " << objval << endl;
-
-   cur_numrows = CPXgetnumrows(env, lp);
-   cur_numcols = CPXgetnumcols(env, lp);
-
-   /*
-   for (i = 0; i < cur_numrows; i++) 
-      printf("Row %d:  Slack = %10f  Pi = %10f\n", i, slack[i], pi[i]);
-
-   for (j = 0; j < cur_numcols; j++) 
-      printf("Column %d:  Value = %10f  Reduced cost = %10f\n",
-         j, x[j], dj[j]);
-    */
+   cout << "Solution:" << endl;
+   for(i=0;i<cur_numcols;i++)
+      cout << x[i] << " ";
+   cout << endl;
 
 TERMINATE:
    // Free up the problem as allocated by CPXcreateprob, if necessary
@@ -181,11 +189,16 @@ TERMINATE:
    free_and_null((char **)&matval);
    free_and_null((char **)&lb);
    free_and_null((char **)&ub);
+   free_and_null((char **)&ctype);
    free_and_null((char **)&qmatbeg);
    free_and_null((char **)&qmatcnt);
    free_and_null((char **)&qmatind);
    free_and_null((char **)&qmatval);
 
+   free_and_null((char **)&x);
+   free_and_null((char **)&slack);
+   //free_and_null((char **)&dj);
+   //free_and_null((char **)&pi);
    return (status);
 }  
 
@@ -193,7 +206,7 @@ int QuadraticGAP::setproblemdata(char **probname_p, int *numcols_p, int *numrows
    int *objsen_p, double **obj_p, double **rhs_p,
    char **sense_p, int **matbeg_p, int **matcnt_p,
    int **matind_p, double **matval_p, double **lb_p,
-   double **ub_p, int **qmatbeg_p, int **qmatcnt_p,
+   double **ub_p, char **ctype_p, int **qmatbeg_p, int **qmatcnt_p,
    int **qmatind_p, double **qmatval_p)
 {
    int i,j,h,k,ij,hk,idRow,idCol;
@@ -208,6 +221,7 @@ int QuadraticGAP::setproblemdata(char **probname_p, int *numcols_p, int *numrows
    double   *zmatval = NULL;
    double   *zlb = NULL;
    double   *zub = NULL;
+   char     *zctype = NULL;
    int      *zqmatbeg = NULL;
    int      *zqmatcnt = NULL;
    int      *zqmatind = NULL;
@@ -229,6 +243,7 @@ int QuadraticGAP::setproblemdata(char **probname_p, int *numcols_p, int *numrows
    zmatval = (double *)malloc(numNZ * sizeof(double));
    zlb = (double *)malloc(numCols * sizeof(double));
    zub = (double *)malloc(numCols * sizeof(double));
+   zctype = (char *)malloc(numCols * sizeof(char));
    zqmatbeg = (int *)malloc(numCols * sizeof(int));
    zqmatcnt = (int *)malloc(numCols * sizeof(int));
    zqmatind = (int *)malloc(numQNZ * sizeof(int));
@@ -255,6 +270,7 @@ int QuadraticGAP::setproblemdata(char **probname_p, int *numcols_p, int *numrows
          zobj[ij] = cl[i][j];
          zlb[ij] = 0;
          zub[ij] = 1;
+         zctype[ij] = 'I';
          ij++;
       }
 
@@ -326,6 +342,7 @@ TERMINATE:
       free_and_null((char **)&zmatval);
       free_and_null((char **)&zlb);
       free_and_null((char **)&zub);
+      free_and_null((char **)&zctype);
       free_and_null((char **)&zqmatbeg);
       free_and_null((char **)&zqmatcnt);
       free_and_null((char **)&zqmatind);
@@ -347,6 +364,7 @@ TERMINATE:
       *matval_p = zmatval;
       *lb_p = zlb;
       *ub_p = zub;
+      *ctype_p = zctype;
       *qmatbeg_p = zqmatbeg;
       *qmatcnt_p = zqmatcnt;
       *qmatind_p = zqmatind;
