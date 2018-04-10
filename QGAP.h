@@ -14,6 +14,7 @@ class Config
 public:
    string datapath;  // path to instances directory
    string datafile;  // the instance to solve
+   int opt_target;   // optimality target
    int isverbose;    // console output detail
 };
 
@@ -45,6 +46,8 @@ private:
       double **ub_p, char **ctype_p, int **qmatbeg_p, int **qmatcnt_p,
       int **qmatind_p, double **qmatval_p);
    double eigenValues(double *qmatval, int n);
+
+   int optimality_target;  // convex function or not
 };
 
 // free

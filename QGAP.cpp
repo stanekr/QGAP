@@ -53,6 +53,8 @@ int QuadraticGAP::Qopt (void)
 
    vector < vector <double>> q(m, vector<double>(n)); // for debug
 
+   optimality_target = conf->opt_target;
+
    // Initialize the CPLEX environment
    env = CPXopenCPLEX(&status);
    if (env == NULL) 
@@ -103,11 +105,13 @@ int QuadraticGAP::Qopt (void)
       goto TERMINATE;
    }
 
-   // Now copy the ctype array
-   status = CPXcopyctype(env, lp, ctype);
-   if (status) 
-   {  fprintf(stderr, "Failed to copy ctype\n");
-      goto TERMINATE;
+   // Copy the ctype array, make problem integer
+   if(optimality_target != 2)
+   {  status = CPXcopyctype(env, lp, ctype);
+      if (status) 
+      {  fprintf(stderr, "Failed to copy ctype\n");
+         goto TERMINATE;
+      }
    }
 
    // Write a copy of the problem to a file. 
@@ -117,20 +121,35 @@ int QuadraticGAP::Qopt (void)
       goto TERMINATE;
    }
 
+   // 1: assumes that the model is convex and searches for a globally optimal solution.
    // 2: Searches for a solution that satisfies first-order optimality conditions, but is not necessarily globally optimal.
    // 3: Searches for a globally optimal solution to a nonconvex model; changes problem type to MIQP if necessary.
-   int optimalityTarget = 3;
-   cout << "Setting optimality target to "<< optimalityTarget << endl;
-   status = CPXsetintparam(env, CPXPARAM_OptimalityTarget, optimalityTarget);
+   cout << "Optimality target set to "<< optimality_target << endl;
+   status = CPXsetintparam(env, CPXPARAM_OptimalityTarget, optimality_target);
    if (status)
    {  fprintf(stderr, "Failure to reset optimality target, error %d.\n", status);
       goto TERMINATE;
    }
+   else
+      switch (optimality_target)
+      {
+         case 1:  cout << "MIP solution, convex function" << endl;
+            break;
+         case 2:  cout << "Continuous solution, any function" << endl;
+            break;
+         case 3:  cout << "Trying heuristic MIP solution, any function" << endl;
+            break;
+         default:
+            break;
+      }
 
    // Optimize the problem and obtain solution.
-   status = CPXqpopt(env, lp);
-   //status = CPXchgprobtype(env, lp, CPXPROB_MIQCP);
-   //status = CPXmipopt(env, lp);
+   if(optimality_target > 1)
+      status = CPXqpopt(env, lp); // in case of non convex function (opt target > 1)
+   else
+   {  status = CPXchgprobtype(env, lp, CPXPROB_MIQCP); // in case of convex functions
+      status = CPXmipopt(env, lp);                     // in case of convex functions
+   }
    if (status) 
    {  fprintf(stderr, "Failed to optimize QP.\n");
       goto TERMINATE;
@@ -390,8 +409,8 @@ double QuadraticGAP::eigenValues(double *qmatval, int n)
    for(i=0;i<n;i++)
       for(j=0;j<n;j++)
       {  mat(i,j) = qmatval[k];
-         if(mat(i,j) != m(i,j))
-            cout << "ouch" << endl;
+         //if(mat(i,j) != m(i,j)/2)
+         //   cout << "ouch" << endl;
          k++;
       }
 
@@ -416,6 +435,15 @@ double QuadraticGAP::eigenValues(double *qmatval, int n)
    if (eigs.info() == SUCCESSFUL)
       evalues = eigs.eigenvalues();
    std::cout << "Smallest eigenvalues:" << evalues << std::endl;
+
+   for (i = 0; i<n; i++)
+      for (j = 0; j<n; j++)
+         if (i == j) 
+            if(evalues[0] < 0 && optimality_target == 1)
+               qmatval[i*n+j] -= evalues[0];  // convexification
+            else
+               qmatval[i*n + j] *= 2;  // all other coefficients will be doubled
+
    return evalues[0];
 }
 

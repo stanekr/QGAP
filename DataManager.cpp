@@ -28,9 +28,10 @@ Config* DataManager::loadConfig()
 
    json::Value JSV = json::Deserialize(line);
 
-   QGAP->conf->datapath  = JSV["datapath"];
-   QGAP->conf->datafile  = JSV["datafile"];
-   QGAP->conf->isverbose = JSV["isverbose"];
+   QGAP->conf->datapath   = JSV["datapath"];
+   QGAP->conf->datafile   = JSV["datafile"];
+   QGAP->conf->opt_target = JSV["opt_target"];
+   QGAP->conf->isverbose  = JSV["isverbose"];
    return QGAP->conf;
 }
 
