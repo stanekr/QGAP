@@ -1,5 +1,6 @@
 {
    "datapath"  : "c:/AAAToBackup/ricerche/GAP/quadratic/instances/",
    "datafile"  : "toy.json",
+   "opt_target": 3,
    "isverbose" : 1
 }
