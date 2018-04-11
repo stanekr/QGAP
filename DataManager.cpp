@@ -40,6 +40,7 @@ void DataManager::readJSONdata(string infile)
 {
    string line;
    size_t i, j, cont;
+   int format;
 
    try
    {
@@ -61,6 +62,7 @@ void DataManager::readJSONdata(string infile)
    QGAP->name = JSV["name"];
    QGAP->n = JSV["numcli"];
    QGAP->m = JSV["numserv"];
+   format  = JSV["format"];   // 1: single quad matrix, 2 two matrices to multiply
    QGAP->cap = (int*)malloc(QGAP->m * sizeof(int));
    for (i = 0; i<JSV["cap"].size(); i++)
       QGAP->cap[i] = JSV["cap"][i];
@@ -73,20 +75,33 @@ void DataManager::readJSONdata(string infile)
          QGAP->cl[i][j] = JSV["costlin"][i][j];
    }
 
-   QGAP->cqd = (double**)malloc(QGAP->m * sizeof(double *));
-   for (i = 0; i<JSV["costqd"].size(); i++)
+   if (format > 1)   // 2 matrices, distances and flows, d_ij, f_hk
    {
-      QGAP->cqd[i] = (double*)malloc(QGAP->n * sizeof(double));
-      for (j = 0; j<JSV["costqd"][i].size(); j++)
-         QGAP->cqd[i][j] = JSV["costqd"][i][j];
-   }
+      QGAP->cqd = (double**)malloc(QGAP->m * sizeof(double *));
+      for (i = 0; i<JSV["costqd"].size(); i++)
+      {
+         QGAP->cqd[i] = (double*)malloc(QGAP->n * sizeof(double));
+         for (j = 0; j<JSV["costqd"][i].size(); j++)
+            QGAP->cqd[i][j] = JSV["costqd"][i][j];
+      }
 
-   QGAP->cqf = (double**)malloc(QGAP->m * sizeof(double *));
-   for (i = 0; i<JSV["costqf"].size(); i++)
+      QGAP->cqf = (double**)malloc(QGAP->m * sizeof(double *));
+      for (i = 0; i<JSV["costqf"].size(); i++)
+      {
+         QGAP->cqf[i] = (double*)malloc(QGAP->n * sizeof(double));
+         for (j = 0; j<JSV["costqf"][i].size(); j++)
+            QGAP->cqf[i][j] = JSV["costqf"][i][j];
+      }
+   }
+   else     // 1 matrix, c_ijhk
    {
-      QGAP->cqf[i] = (double*)malloc(QGAP->n * sizeof(double));
-      for (j = 0; j<JSV["costqf"][i].size(); j++)
-         QGAP->cqf[i][j] = JSV["costqf"][i][j];
+      QGAP->cqd = (double**)malloc(QGAP->m *QGAP->n * sizeof(double *));
+      for (i = 0; i<JSV["costq"].size(); i++)
+      {
+         QGAP->cqd[i] = (double*)malloc(QGAP->n * sizeof(double));
+         for (j = 0; j<JSV["costqd"][i].size(); j++)
+            QGAP->cqd[i][j] = JSV["costqd"][i][j];
+      }
    }
 
    QGAP->req = (int**)malloc(QGAP->m * sizeof(int *));
