@@ -28,8 +28,9 @@ Config* DataManager::loadConfig()
 
    json::Value JSV = json::Deserialize(line);
 
-   QGAP->conf->datapath   = JSV["datapath"];
-   QGAP->conf->datafile   = JSV["datafile"];
+   QGAP->conf->datapath = JSV["datapath"];
+   QGAP->conf->datafile = JSV["datafile"];
+   QGAP->conf->mode     = JSV["mode"];
    QGAP->conf->opt_target = JSV["opt_target"];
    QGAP->conf->isverbose  = JSV["isverbose"];
    return QGAP->conf;
@@ -95,13 +96,14 @@ void DataManager::readJSONdata(string infile)
    }
    else     // 1 matrix, c_ijhk
    {
-      QGAP->cqd = (double**)malloc(QGAP->m *QGAP->n * sizeof(double *));
+      QGAP->cqd = (double**)malloc(QGAP->m*QGAP->n * sizeof(double *));
       for (i = 0; i<JSV["costq"].size(); i++)
       {
-         QGAP->cqd[i] = (double*)malloc(QGAP->n * sizeof(double));
-         for (j = 0; j<JSV["costqd"][i].size(); j++)
-            QGAP->cqd[i][j] = JSV["costqd"][i][j];
+         QGAP->cqd[i] = (double*)malloc(QGAP->m*QGAP->n * sizeof(double));
+         for (j = 0; j<JSV["costq"][i].size(); j++)
+            QGAP->cqd[i][j] = JSV["costq"][i][j];
       }
+      QGAP->cqf = NULL;
    }
 
    QGAP->req = (int**)malloc(QGAP->m * sizeof(int *));
@@ -114,3 +116,184 @@ void DataManager::readJSONdata(string infile)
 
    cout << "JSON data read" << endl;;
 }
+
+bool endsWith(const string& s, const string& suffix)
+{
+   return s.rfind(suffix) == (s.size() - suffix.size());
+}
+
+
+// trim, toglie spazi bianchi a inizio e fine stringa
+static std::string Trim(const std::string& str)
+{
+   std::string s = str;
+
+   // remove white space in front
+   s.erase(s.begin(), std::find_if(s.begin(), s.end(), std::not1(std::ptr_fun<int, int>(std::isspace))));
+
+   // remove trailing white space
+   s.erase(std::find_if(s.rbegin(), s.rend(), std::not1(std::ptr_fun<int, int>(std::isspace))).base(), s.end());
+
+   return s;
+}
+
+// split di una stringa in un array di elementi delimitati da separatori
+vector<string> split(string str, string sep)
+{
+   char* cstr = const_cast<char*>(str.c_str());
+   char* current;
+   vector<string> elem;
+   current = strtok(cstr, sep.c_str());
+   while (current != NULL)
+   {
+      elem.push_back(current);
+      current = strtok(NULL, sep.c_str());
+   }
+   return elem;
+}
+
+void DataManager::transcode(string infile)
+{  
+   if(endsWith(infile,"json"))
+   {  cout << "Transcoding json -> ampl" << endl;
+      json2ampl(infile);
+   }
+   else
+   {  cout << "Transcoding ampl -> json" << endl;
+      ampl2json(infile);
+   }
+}
+
+void DataManager::json2ampl(string infile)
+{  int i,j,h,k,n,m;
+
+   readJSONdata(infile);
+   if(QGAP->cqf == NULL)
+   {  cout << "Unacceptable input format, I need the d and f matrices" << endl;
+      return;
+   }
+
+   string str = infile, str2 = "json", str3 = "dat";
+   str.replace(str.find(str2), str2.length(), str3);
+
+   ofstream amplFile;
+   amplFile.open(str);
+   m = QGAP->m;
+   n = QGAP->n;
+   str = str.substr(str.find_last_of("/") + 1);
+   cout << "### QGAP data-file " << str << " ###" << endl;
+   amplFile << "### QGAP data-file " << str << " ###" << endl;
+   amplFile << endl;
+   amplFile << "param: I: a: =" << endl;
+
+   for(i=0;i<m;i++)
+   {  amplFile << i+1 << " " << QGAP->cap[i] << endl;
+   }
+
+   amplFile << ";" << endl;
+   amplFile << endl;
+   amplFile << "set J : =";
+   for(i=0;i<n;i++) amplFile << i+1 <<" ";
+   amplFile << ";" << endl;
+   amplFile << endl;
+   amplFile << "set R : ="; 
+   for (i = 0; i<m; i++) amplFile << i+1 << " ";
+   amplFile << ";" << endl;
+   amplFile << endl;
+   amplFile << "set S : ="; 
+   for (i = 0; i<n; i++) amplFile << i+1 << " ";
+   amplFile << ";" << endl;
+
+   // requests
+   amplFile << " \nparam w :\n  ";
+   for (i = 0; i<n; i++) 
+      amplFile << setw(4) << (i + 1);
+   amplFile << " : =" << endl;
+   for(i=0;i<m;i++)
+   {  amplFile << setw(2) << i+1;
+      for(j=0;j<n;j++) amplFile << setw(4) << QGAP->req[i][j];
+      amplFile << (i==m-1 ? " ;" : "") << endl;
+   }
+
+   // linear costs
+   amplFile << " \nparam p :\n  ";
+   for (i = 0; i<n; i++)
+      amplFile << setw(4) << (i + 1);
+   amplFile << " : =" << endl;
+   for (i = 0; i<m; i++)
+   {
+      amplFile << setw(2) << i + 1;
+      for (j = 0; j<n; j++) amplFile << setw(4) << QGAP->cl[i][j];
+      amplFile << (i == m - 1 ? " ;" : "") << endl;
+   }
+
+   // distance matrix
+   amplFile << " \nparam d :\n  ";
+   for (i = 0; i<m; i++)
+      amplFile << setw(4) << (i + 1);
+   amplFile << " : =" << endl;
+   for (i = 0; i<m; i++)
+   {
+      amplFile << setw(2) << i + 1;
+      for (j = 0; j<m; j++) amplFile << setw(4) << QGAP->cqd[i][j];
+      amplFile << (i == m - 1 ? " ;" : "") << endl;
+   }
+
+   // flow matrix
+   amplFile << " \nparam f :\n  ";
+   for (i = 0; i<n; i++)
+      amplFile << setw(4) << (i + 1);
+   amplFile << " : =" << endl;
+   for (i = 0; i<n; i++)
+   {
+      amplFile << setw(2) << i + 1;
+      for (j = 0; j<n; j++) amplFile << setw(4) << QGAP->cqf[i][j];
+      amplFile << (i == n - 1 ? " ;" : "") << endl;
+   }
+
+   amplFile.close();
+}
+
+void DataManager::ampl2json(string infile)
+{
+   string line;
+   int i,j,m,n;
+   vector<string> elem;
+
+   // data reading section
+   ifstream amplFile;
+   amplFile.open(infile);
+   amplFile.exceptions(ifstream::eofbit | ifstream::failbit | ifstream::badbit);
+   do
+   {
+      getline(amplFile, line);
+      line = Trim(line);
+      cout << line << endl;
+   }
+   while(line.substr(0,1) != "p");
+
+   vector<int> cap;
+   getline(amplFile, line);
+   do
+   {
+      line = Trim(line);
+      elem = split(line," ");
+      cap.push_back(atoi(elem[1].c_str() ));
+      cout << line << endl;
+      getline(amplFile, line);
+   } while (line.substr(0, 1) != ";");
+   m = cap.size();
+   amplFile.close();
+
+   // data writing section
+   string str = infile, str2 = "dat", str3 = "json";
+   str = str.replace(str.find(str2), str2.length(), str3);
+
+   ofstream jsonFile;
+   jsonFile.open(str);
+
+   jsonFile << "Starting" << endl;
+
+   jsonFile.close();
+}
+

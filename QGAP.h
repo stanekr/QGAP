@@ -14,7 +14,7 @@ class Config
 public:
    string datapath;  // path to instances directory
    string datafile;  // the instance to solve
-   int format;       // datafile format: 1 whole quadratic matrix, 2 two matrices to multiply
+   int mode;         // usage mode: 1 optimize, 2 transcode
    int opt_target;   // optimality target
    int isverbose;    // console output detail
 };

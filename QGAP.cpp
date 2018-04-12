@@ -305,13 +305,17 @@ int QuadraticGAP::setproblemdata(char **probname_p, int *numcols_p, int *numrows
             for (k = 0; k<n; k++)
             {
                zqmatind[numNZ] = hk;
-               zqmatval[numNZ] = cqd[i][h] * cqf[j][k];
+               if (cqf != NULL)
+                  zqmatval[numNZ] = cqd[i][h] * cqf[j][k]; // d_ih f_jk input format
+               else
+                  zqmatval[numNZ] = cqd[ij][hk];           // c_ijhk input format
                numNZ++;
                hk++;
             }
          zqmatcnt[ij] = numNZ - zqmatbeg[ij];
          ij++;
       }
+
 
    // -------------------------- find eigenvalues
    double evalue = eigenValues(zqmatval,i*j);

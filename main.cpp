@@ -7,9 +7,13 @@ int main()
    DataManager*  DM   = new DataManager();
    DM->QGAP = QGAP;
    DM->loadConfig();
-   DM->readJSONdata(QGAP->conf->datapath + QGAP->conf->datafile);
-
-   QGAP->Qopt();
+   if(QGAP->conf->mode == 1)
+   {
+      DM->readJSONdata(QGAP->conf->datapath + QGAP->conf->datafile);
+      QGAP->Qopt();
+   }
+   else
+      DM->transcode(QGAP->conf->datapath + QGAP->conf->datafile);
    cout << "\n<ENTER> to exit ..."; cin.get();
 
    delete QGAP;
