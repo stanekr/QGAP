@@ -1,7 +1,7 @@
 {
    "datapath"  : "c:/AAAToBackup/ricerche/GAP/quadratic/instances/",
-   "datafile"  : "a06x05.dat",
-   "mode"      : 2,
-   "opt_target": 3,
+   "datafile"  : "a06x05.json",
+   "mode"      : 1,
+   "opt_target": 1,
    "isverbose" : 1
 }
