@@ -259,11 +259,13 @@ void DataManager::ampl2json(string infile)
    string line;
    int i,j,m,n;
    vector<string> elem;
+   vector<vector<int>> clin,req,cqd,cqf;
 
    // data reading section
    ifstream amplFile;
    amplFile.open(infile);
    amplFile.exceptions(ifstream::eofbit | ifstream::failbit | ifstream::badbit);
+   
    do
    {
       getline(amplFile, line);
@@ -272,6 +274,7 @@ void DataManager::ampl2json(string infile)
    }
    while(line.substr(0,1) != "p");
 
+   // reading capacities
    vector<int> cap;
    getline(amplFile, line);
    do
@@ -283,17 +286,163 @@ void DataManager::ampl2json(string infile)
       getline(amplFile, line);
    } while (line.substr(0, 1) != ";");
    m = cap.size();
+
+   // reading requests
+   do
+   {
+      getline(amplFile, line);
+      line = Trim(line);
+      cout << line << endl;
+   } while (line.substr(0, 1) != "p");
+
+   getline(amplFile, line);
+   line = Trim(line);
+   elem = split(line, " ");
+   n = elem.size() - 1; // there is the := at the end of the line
+
+   i=0;
+   do
+   {
+      getline(amplFile, line);
+      line = Trim(line);
+      cout << line << endl;
+      elem = split(line, " ");
+      req.push_back(vector<int>());
+      for(j=0;j<n;j++)
+         req[i].push_back(atoi(elem[j+1].c_str()));
+      i++;
+   } while (line.find(";") == string::npos);
+
+   // reading linear costs
+   do
+   {
+      getline(amplFile, line);
+      line = Trim(line);
+      cout << line << endl;
+   } while (line.substr(0, 1) != "p");
+
+   getline(amplFile, line);
+   i = 0;
+   do
+   {
+      getline(amplFile, line);
+      line = Trim(line);
+      cout << line << endl;
+      elem = split(line, " ");
+      clin.push_back(vector<int>());
+      for (j = 0; j<n; j++)
+         clin[i].push_back(atoi(elem[j + 1].c_str()));
+      i++;
+   } while (line.find(";") == string::npos);
+
+   // reading distance quadratic costs
+   do
+   {
+      getline(amplFile, line);
+      line = Trim(line);
+      cout << line << endl;
+   } while (line.substr(0, 1) != "p");
+
+   getline(amplFile, line);
+   i = 0;
+   do
+   {
+      getline(amplFile, line);
+      line = Trim(line);
+      cout << line << endl;
+      elem = split(line, " ");
+      cqd.push_back(vector<int>());
+      for (j = 0; j<m; j++)
+         cqd[i].push_back(atoi(elem[j + 1].c_str()));
+      i++;
+   } while (line.find(";") == string::npos);
+
+   // reading flow quadratic costs
+   do
+   {
+      getline(amplFile, line);
+      line = Trim(line);
+      cout << line << endl;
+   } while (line.substr(0, 1) != "p");
+
+   getline(amplFile, line);
+   i = 0;
+   do
+   {
+      getline(amplFile, line);
+      line = Trim(line);
+      cout << line << endl;
+      elem = split(line, " ");
+      cqf.push_back(vector<int>());
+      for (j = 0; j<n; j++)
+         cqf[i].push_back(atoi(elem[j + 1].c_str()));
+      i++;
+   } while (line.find(";") == string::npos);
+
    amplFile.close();
 
    // data writing section
+
+
    string str = infile, str2 = "dat", str3 = "json";
    str = str.replace(str.find(str2), str2.length(), str3);
+   QGAP->name = str;
+
+   json::Object obj;
+   obj["name"]= str.substr(str.find_last_of("/") + 1);
+   obj["numcli"]  = n;
+   obj["numserv"] = m;
+   obj["format"]  = 2;
+
+   json::Array jcostlin;
+   for (int i = 0; i<clin.size(); i++)
+   {  json::Array vec;
+      for (int j = 0; j<clin[i].size(); j++)
+         vec.push_back(clin[i][j]);
+      jcostlin.push_back(vec);
+   }   
+   obj["costlin"] = jcostlin;
+
+   json::Array jcostqd;
+   for (int i = 0; i<cqd.size(); i++)
+   {
+      json::Array vec;
+      for (int j = 0; j<cqd[i].size(); j++)
+         vec.push_back(cqd[i][j]);
+      jcostqd.push_back(vec);
+   }
+   obj["costqd"] = jcostqd;
+
+   json::Array jcostqf;
+   for (int i = 0; i<cqf.size(); i++)
+   {
+      json::Array vec;
+      for (int j = 0; j<cqf[i].size(); j++)
+         vec.push_back(cqf[i][j]);
+      jcostqf.push_back(vec);
+   }
+   obj["costqf"] = jcostqf;
+
+   json::Array jreq;
+   for (int i = 0; i<req.size(); i++)
+   {
+      json::Array vec;
+      for (int j = 0; j<req[i].size(); j++)
+         vec.push_back(req[i][j]);
+      jreq.push_back(vec);
+   }
+   obj["req"] = jreq;
+
+   json::Array jcap;
+   for (int i = 0; i<cap.size(); i++)
+      jcap.push_back(cap[i]);
+   obj["cap"] = jcap;
+
+   string jObj = json::Serialize(obj);
 
    ofstream jsonFile;
    jsonFile.open(str);
-
-   jsonFile << "Starting" << endl;
-
+   jsonFile << jObj << endl;
    jsonFile.close();
 }
 
