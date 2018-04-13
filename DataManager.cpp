@@ -81,12 +81,12 @@ void DataManager::readJSONdata(string infile)
       QGAP->cqd = (double**)malloc(QGAP->m * sizeof(double *));
       for (i = 0; i<JSV["costqd"].size(); i++)
       {
-         QGAP->cqd[i] = (double*)malloc(QGAP->n * sizeof(double));
+         QGAP->cqd[i] = (double*)malloc(QGAP->m * sizeof(double));
          for (j = 0; j<JSV["costqd"][i].size(); j++)
             QGAP->cqd[i][j] = JSV["costqd"][i][j];
       }
 
-      QGAP->cqf = (double**)malloc(QGAP->m * sizeof(double *));
+      QGAP->cqf = (double**)malloc(QGAP->n * sizeof(double *));
       for (i = 0; i<JSV["costqf"].size(); i++)
       {
          QGAP->cqf[i] = (double*)malloc(QGAP->n * sizeof(double));
@@ -184,7 +184,7 @@ void DataManager::json2ampl(string infile)
    cout << "### QGAP data-file " << str << " ###" << endl;
    amplFile << "### QGAP data-file " << str << " ###" << endl;
    amplFile << endl;
-   amplFile << "param: I: a: =" << endl;
+   amplFile << "param: I: a:= " << endl;
 
    for(i=0;i<m;i++)
    {  amplFile << i+1 << " " << QGAP->cap[i] << endl;
@@ -192,15 +192,15 @@ void DataManager::json2ampl(string infile)
 
    amplFile << ";" << endl;
    amplFile << endl;
-   amplFile << "set J : =";
+   amplFile << "set J := ";
    for(i=0;i<n;i++) amplFile << i+1 <<" ";
    amplFile << ";" << endl;
    amplFile << endl;
-   amplFile << "set R : ="; 
+   amplFile << "set R := "; 
    for (i = 0; i<m; i++) amplFile << i+1 << " ";
    amplFile << ";" << endl;
    amplFile << endl;
-   amplFile << "set S : ="; 
+   amplFile << "set S := "; 
    for (i = 0; i<n; i++) amplFile << i+1 << " ";
    amplFile << ";" << endl;
 
@@ -208,7 +208,7 @@ void DataManager::json2ampl(string infile)
    amplFile << " \nparam w :\n  ";
    for (i = 0; i<n; i++) 
       amplFile << setw(4) << (i + 1);
-   amplFile << " : =" << endl;
+   amplFile << " := " << endl;
    for(i=0;i<m;i++)
    {  amplFile << setw(2) << i+1;
       for(j=0;j<n;j++) amplFile << setw(4) << QGAP->req[i][j];
@@ -219,7 +219,7 @@ void DataManager::json2ampl(string infile)
    amplFile << " \nparam p :\n  ";
    for (i = 0; i<n; i++)
       amplFile << setw(4) << (i + 1);
-   amplFile << " : =" << endl;
+   amplFile << " := " << endl;
    for (i = 0; i<m; i++)
    {
       amplFile << setw(2) << i + 1;
@@ -231,7 +231,7 @@ void DataManager::json2ampl(string infile)
    amplFile << " \nparam d :\n  ";
    for (i = 0; i<m; i++)
       amplFile << setw(4) << (i + 1);
-   amplFile << " : =" << endl;
+   amplFile << " := " << endl;
    for (i = 0; i<m; i++)
    {
       amplFile << setw(2) << i + 1;
@@ -243,7 +243,7 @@ void DataManager::json2ampl(string infile)
    amplFile << " \nparam f :\n  ";
    for (i = 0; i<n; i++)
       amplFile << setw(4) << (i + 1);
-   amplFile << " : =" << endl;
+   amplFile << " := " << endl;
    for (i = 0; i<n; i++)
    {
       amplFile << setw(2) << i + 1;
