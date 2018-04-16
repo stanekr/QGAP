@@ -2,6 +2,6 @@
    "datapath"  : "c:/AAAToBackup/ricerche/GAP/quadratic/instances/",
    "datafile"  : "qgap1_1.json",
    "mode"      : 1,
-   "opt_target": 3,
+   "opt_target": 1,
    "isverbose" : 1
 }

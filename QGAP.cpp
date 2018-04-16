@@ -1,5 +1,6 @@
 #include "QGAP.h"
 #include <Eigen/Core>
+#include <Eigen/LU>         // for the determinant
 #include <SymEigsSolver.h>  // Also includes <MatOp/DenseSymMatProd.h>
 
 using Eigen::MatrixXd;
@@ -417,6 +418,9 @@ double QuadraticGAP::eigenValues(double *qmatval, int n)
          //   cout << "ouch" << endl;
          k++;
       }
+
+   double det = mat.determinant();
+   cout << "Determinant: " << det << endl;
 
    Eigen::MatrixXd M = m + m.transpose();
    // Construct matrix operation object 
