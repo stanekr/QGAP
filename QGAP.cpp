@@ -144,6 +144,9 @@ int QuadraticGAP::Qopt (void)
             break;
       }
 
+   // max cplex time: 600 seconds
+   status = CPXsetintparam(env, CPXPARAM_TimeLimit, 600);   
+
    // Optimize the problem and obtain solution.
    if(optimality_target > 1)
       status = CPXqpopt(env, lp); // in case of non convex function (opt target > 1)
@@ -473,35 +476,66 @@ void free_and_null(char **ptr)
 
 // checks the feasibility of a given solution
 int QuadraticGAP::checkfeas(double* x, double solcost)
-{  int cost = 0;  // solution ok
+{  int res = 0;  // solution ok
    int i, j;
-   int* capused = new int[m];
-   vector<double> sol (n);
+   double cost = 0;
+   double* capused = new double[m];
+   vector<int> sol (n);
+   bool isInteger = true;  // have got an integer solution
 
-   for (i = 0; i<m; i++) capused[i] = 0;
+   for (i = 0; i<m; i++) 
+   {
+      capused[i] = 0;
+      for(j=0;j<n;j++)
+         if(abs(x[i*m+j]-trunc(x[i*m+j]) > EPS) )
+            isInteger = false;
+   }
+
+   if(isInteger)
+      for(j=0;j<n;j++)
+      {  sol[j] = -1;
+         for(i=0;i<m;i++)
+            if(x[i*m+j] > EPS)
+               if(sol[j] > EPS)
+               {  res = 1;       // multiple assignment of some client
+                  goto lend;
+               }
+               else
+                  sol[j] = i;
+      }
 
    // controllo assegnamenti
    for (j = 0; j<n; j++)
       if (sol[j]<0 || sol[j] >= m)
-      {
-         cost = INT_MAX;
+      {  res = 2;       // client assignment to a non-server
          goto lend;
       }
-      else
-         cost += c[sol[j]][j];
 
    // controllo capacità
    for (j = 0; j<n; j++)
-   {
-      capused[sol[j]] += req[sol[j]][j];
+   {  capused[sol[j]] += req[sol[j]][j];
       if (capused[sol[j]] > cap[sol[j]])
-      {
-         cost = INT_MAX;
+      {  res = 3;       // capacity exceeded
          goto lend;
       }
    }
    delete capused;
 
-   lend:
-   return cost;
+   // check cost
+   for(i=0;i<m;i++)
+      for(j=0;j<n;j++)
+      {  cost += cl[i][j];
+
+         for(int h=0;h<m;h++)
+            for(int k=0;k<n;k++)
+               cost += cqd[i][h]*cqf[j][k]*x[i*m+j]*x[h*m+k];
+      }
+
+   if (abs(solcost - cost) > EPS)
+   {  res = 4;       // unaligned costs
+      goto lend;
+   }
+
+lend:
+   return res;
 }

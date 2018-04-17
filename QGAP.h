@@ -51,6 +51,7 @@ private:
    int QuadraticGAP::checkfeas(double* x, double cost);
 
    int optimality_target;  // convex function or not
+   double EPS = 0.0001;
 };
 
 // free
