@@ -24,6 +24,7 @@ protected:
 private:
    void json2ampl(string infile);
    void ampl2json(string infile);
+   void leeMa2json(string infile);
 };
 
 #endif // DATA_H

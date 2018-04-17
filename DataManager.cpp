@@ -122,7 +122,6 @@ bool endsWith(const string& s, const string& suffix)
    return s.rfind(suffix) == (s.size() - suffix.size());
 }
 
-
 // trim, toglie spazi bianchi a inizio e fine stringa
 static std::string Trim(const std::string& str)
 {
@@ -158,9 +157,13 @@ void DataManager::transcode(string infile)
    {  cout << "Transcoding json -> ampl" << endl;
       json2ampl(infile);
    }
-   else
+   else if (endsWith(infile, "dat"))
    {  cout << "Transcoding ampl -> json" << endl;
       ampl2json(infile);
+   }
+   else
+   {  cout << "Transcoding Cordeau -> json -> ampl" << endl;
+      leeMa2json(infile);
    }
 }
 
@@ -218,12 +221,12 @@ void DataManager::json2ampl(string infile)
    // linear costs
    amplFile << " \nparam p :\n  ";
    for (i = 0; i<n; i++)
-      amplFile << setw(4) << (i + 1);
+      amplFile << setw(8) << (i + 1);
    amplFile << " := " << endl;
    for (i = 0; i<m; i++)
    {
       amplFile << setw(2) << i + 1;
-      for (j = 0; j<n; j++) amplFile << setw(4) << QGAP->cl[i][j];
+      for (j = 0; j<n; j++) amplFile << setw(8) << QGAP->cl[i][j];
       amplFile << (i == m - 1 ? " ;" : "") << endl;
    }
 
@@ -444,5 +447,198 @@ void DataManager::ampl2json(string infile)
    jsonFile.open(str);
    jsonFile << jObj << endl;
    jsonFile.close();
+}
+
+void DataManager::leeMa2json(string infile)
+{
+   string line;
+   int i, j, k, m, n, v;
+   vector<string> elem;
+   vector<vector<int>> clin, req, cqd, cqf;
+
+   // data reading section
+   ifstream leemaFile;
+   leemaFile.open(infile);
+   leemaFile.exceptions(ifstream::eofbit | ifstream::failbit | ifstream::badbit);
+
+   getline(leemaFile, line);
+   line = Trim(line);
+   cout << line << endl;
+   elem = split(line, " ");
+   n = atoi(elem[0].c_str());
+   m = atoi(elem[1].c_str());
+   v = atoi(elem[2].c_str());
+
+   // reading flow quadratic costs
+   i = 0;
+   do
+   {
+      j=0;
+      do
+      {
+         getline(leemaFile, line);
+         line = Trim(line);
+         cout << line << endl;
+         elem = split(line, " ");
+         cqf.push_back(vector<int>());
+         for (k = 0; k<elem.size(); k++)
+         {
+            cqf[i].push_back(atoi(elem[k].c_str()));
+            j++;
+         }
+      } while (j<n);
+      i++;
+   } while (i<n);
+
+   // reading distance quadratic costs
+   i = 0;
+   do
+   {
+      j = 0;
+      do
+      {
+         getline(leemaFile, line);
+         line = Trim(line);
+         cout << line << endl;
+         elem = split(line, " ");
+         cqd.push_back(vector<int>());
+         for (k = 0; k<elem.size(); k++)
+         {
+            cqd[i].push_back(v*atoi(elem[k].c_str()));  // >>>> HERE INCLUDING v !!!!!!!!!!
+            j++;
+         }
+      } while (j<m);
+      i++;
+   } while (i<m);
+
+   // reading linear costs
+   for(i=0;i<m;i++)
+      clin.push_back(vector<int>());
+   j = 0;
+   do
+   {
+      i=0;
+      do
+      {
+         getline(leemaFile, line);
+         line = Trim(line);
+         cout << line << endl;
+         elem = split(line, " ");
+         for (k = 0; k<elem.size(); k++)
+         {  clin[i].push_back(atoi(elem[k].c_str()));
+            i++;
+         }
+      } while (i<m);
+      j++;
+   } while (j<n);
+
+   // reading requests (equal for all servers)
+   for(i=0;i<m;i++)
+      req.push_back(vector<int>());
+   j=0;
+   do
+   {
+      getline(leemaFile, line);
+      line = Trim(line);
+      cout << line << endl;
+      elem = split(line, " ");
+      for (k = 0; k<elem.size(); k++)
+      {  
+         for (i = 0; i<m; i++)
+            req[i].push_back(atoi(elem[k].c_str()));
+         j++;
+      }
+   } while (j<n);
+
+   // reading capacities
+   vector<int> cap;
+   i=0;
+   do
+   {
+      getline(leemaFile, line);
+      line = Trim(line);
+      elem = split(line, " ");
+      for (k = 0; k<elem.size(); k++)
+      {
+         cap.push_back(atoi(elem[k].c_str()));
+         i++;
+      }
+      cout << line << endl;
+   } while (i<m);
+
+   leemaFile.close();
+
+   // data writing section
+   string str = infile;
+   if (endsWith(infile, "txt"))
+   {
+      string str2 = ".txt", str3 = "";
+      str.replace(str.find(str2), str2.length(), str3);
+      infile = str;
+   }
+
+   json::Object obj;
+   obj["name"] = str.substr(str.find_last_of("/") + 1);
+   obj["numcli"] = n;
+   obj["numserv"] = m;
+   obj["format"] = 2;
+
+   str = str+".json";
+   QGAP->name = str;
+
+   json::Array jcostlin;
+   for (int i = 0; i<clin.size(); i++)
+   {
+      json::Array vec;
+      for (int j = 0; j<clin[i].size(); j++)
+         vec.push_back(clin[i][j]);
+      jcostlin.push_back(vec);
+   }
+   obj["costlin"] = jcostlin;
+
+   json::Array jcostqd;
+   for (int i = 0; i<cqd.size(); i++)
+   {
+      json::Array vec;
+      for (int j = 0; j<cqd[i].size(); j++)
+         vec.push_back(cqd[i][j]);
+      jcostqd.push_back(vec);
+   }
+   obj["costqd"] = jcostqd;
+
+   json::Array jcostqf;
+   for (int i = 0; i<cqf.size(); i++)
+   {
+      json::Array vec;
+      for (int j = 0; j<cqf[i].size(); j++)
+         vec.push_back(cqf[i][j]);
+      jcostqf.push_back(vec);
+   }
+   obj["costqf"] = jcostqf;
+
+   json::Array jreq;
+   for (int i = 0; i<req.size(); i++)
+   {
+      json::Array vec;
+      for (int j = 0; j<req[i].size(); j++)
+         vec.push_back(req[i][j]);
+      jreq.push_back(vec);
+   }
+   obj["req"] = jreq;
+
+   json::Array jcap;
+   for (int i = 0; i<cap.size(); i++)
+      jcap.push_back(cap[i]);
+   obj["cap"] = jcap;
+
+   string jObj = json::Serialize(obj);
+
+   ofstream jsonFile;
+   jsonFile.open(str);
+   jsonFile << jObj << endl;
+   jsonFile.close();
+
+   // transcoding to ampl
+   json2ampl(infile+".json");
 }
 
