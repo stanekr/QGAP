@@ -177,7 +177,7 @@ int QuadraticGAP::Qopt (void)
    if (status)
    {  fprintf(stderr, "Solution infeasible.\n");
       cout << "Solution infeasible !!! status = " << status << endl;
-      goto TERMINATE;
+      //goto TERMINATE;
    }
 
    // Write the output to the screen.
@@ -505,16 +505,18 @@ int QuadraticGAP::checkfeas(double* x, double solcost)
       }
 
    // controllo assegnamenti
-   for (j = 0; j<n; j++)
-      if (sol[j]<0 || sol[j] >= m)
-      {  res = 2;       // client assignment to a non-server
-         goto lend;
-      }
+   if(isInteger)
+      for (j = 0; j<n; j++)
+         if (sol[j]<0 || sol[j] >= m)
+         {  res = 2;       // client assignment to a non-server
+            goto lend;
+         }
 
    // controllo capacità
    for (j = 0; j<n; j++)
-   {  capused[sol[j]] += req[sol[j]][j];
-      if (capused[sol[j]] > cap[sol[j]])
+   {  for(i=0;i<m;i++)
+         capused[i] += x[i*m+j]*req[i][j];
+      if (capused[i] > cap[i])
       {  res = 3;       // capacity exceeded
          goto lend;
       }
@@ -533,6 +535,7 @@ int QuadraticGAP::checkfeas(double* x, double solcost)
 
    if (abs(solcost - cost) > EPS)
    {  res = 4;       // unaligned costs
+      cout << "Solcost = " << solcost << " cost = " << cost << endl;
       goto lend;
    }
 
