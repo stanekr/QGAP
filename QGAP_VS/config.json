@@ -1,7 +1,7 @@
 {
-   "datapath"  : "c:/AAAToBackup/ricerche/GAP/quadratic/instances/cordeau/",
-   "datafile"  : "20-15-35.json",
-   "mode"      : 1,
-   "opt_target": 2,
+   "datapath"  : "c:/AAAToBackup/ricerche/GAP/quadratic/instances/LeeMa/",
+   "datafile"  : "10X5-E-G",
+   "mode"      : 2,
+   "opt_target": 3,
    "isverbose" : 1
 }
