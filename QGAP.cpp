@@ -170,6 +170,13 @@ int QuadraticGAP::Qopt (void)
       goto TERMINATE;
    }
 
+   status = checkfeas(x, objval);
+   if (status)
+   {  fprintf(stderr, "Solution infeasible.\n");
+      cout << "Solution infeasible !!! status = " << status << endl;
+      goto TERMINATE;
+   }
+
    // Write the output to the screen.
    cout << "\nSolution status = " << solstat << endl;
    cout << "Solution value  = " << objval << endl;
@@ -463,3 +470,38 @@ void free_and_null(char **ptr)
       *ptr = NULL;
    }
 } // END free_and_null
+
+// checks the feasibility of a given solution
+int QuadraticGAP::checkfeas(double* x, double solcost)
+{  int cost = 0;  // solution ok
+   int i, j;
+   int* capused = new int[m];
+   vector<double> sol (n);
+
+   for (i = 0; i<m; i++) capused[i] = 0;
+
+   // controllo assegnamenti
+   for (j = 0; j<n; j++)
+      if (sol[j]<0 || sol[j] >= m)
+      {
+         cost = INT_MAX;
+         goto lend;
+      }
+      else
+         cost += c[sol[j]][j];
+
+   // controllo capacità
+   for (j = 0; j<n; j++)
+   {
+      capused[sol[j]] += req[sol[j]][j];
+      if (capused[sol[j]] > cap[sol[j]])
+      {
+         cost = INT_MAX;
+         goto lend;
+      }
+   }
+   delete capused;
+
+   lend:
+   return cost;
+}

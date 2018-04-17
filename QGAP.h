@@ -28,6 +28,7 @@ public:
    string name;  // instance name
    int n;        // number of clients
    int m;        // number of servers
+   //int v;        // unit traffic cost    <- factorize this into cqd
    double** cl;  // linear assignment costs
    double** cqf; // quadratic assignment costs, flows
    double** cqd; // quadratic assignment costs, distances
@@ -47,6 +48,7 @@ private:
       double **ub_p, char **ctype_p, int **qmatbeg_p, int **qmatcnt_p,
       int **qmatind_p, double **qmatval_p);
    double eigenValues(double *qmatval, int n);
+   int QuadraticGAP::checkfeas(double* x, double cost);
 
    int optimality_target;  // convex function or not
 };

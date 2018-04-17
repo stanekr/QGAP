@@ -1,7 +1,7 @@
 {
-   "datapath"  : "c:/AAAToBackup/ricerche/GAP/quadratic/instances/",
-   "datafile"  : "qgap1_1.json",
+   "datapath"  : "c:/AAAToBackup/ricerche/GAP/quadratic/instances/cordeau/",
+   "datafile"  : "20-15-35.json",
    "mode"      : 1,
-   "opt_target": 1,
+   "opt_target": 3,
    "isverbose" : 1
 }
