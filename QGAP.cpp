@@ -163,18 +163,33 @@ int QuadraticGAP::Qopt (void)
    }
    if (status) 
    {  fprintf(stderr, "Failed to optimize QP.\n");
-      goto TERMINATE;
+      //goto TERMINATE;
    }
 
    cur_numrows = CPXgetnumrows(env, lp);
    cur_numcols = CPXgetnumcols(env, lp);
 
    int nn = CPXgetsolnpoolnumsolns(env, lp);
+   if(nn==0)
+   {  fprintf(stderr, "Failed to find feasible solutions.\n");
+      goto TERMINATE;
+   }
+   double mincost = DBL_MAX;
+   int minind = -1;
+   for(i=0;i<nn;i++)
+   {  status = CPXgetsolnpoolobjval (env, lp, i, &objval);
+      cout << "Solution " << i << " cost " << objval << endl;
+      if(objval<mincost)
+      {  minind = i;
+         mincost = objval;
+      }
+   }
 
    x     = (double *)malloc(cur_numcols * sizeof(double));
    slack = (double *)malloc(cur_numrows * sizeof(double));
    //dj = (double *)malloc(cur_numcols * sizeof(double));
    //pi = (double *)malloc(cur_numrows * sizeof(double));
+   status = CPXgetsolnpoolx (env, lp, minind, x, 0, CPXgetnumcols(env, lp)-1);
 
    status = CPXsolution(env, lp, &solstat, &objval, x, NULL, slack, NULL);
    if (status) 
