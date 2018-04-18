@@ -115,12 +115,13 @@ int QuadraticGAP::Qopt (void)
       }
    }
 
-   // Write a copy of the problem to a file. 
-   status = CPXwriteprob(env, lp, "qgap.lp", NULL);
-   if (status)
-   {  fprintf(stderr, "Failed to write LP to disk.\n");
-      goto TERMINATE;
-   }
+   // Write a copy of the problem to a file, if instance sufficiently small
+   if(conf->isverbose && n*m < 100)
+      status = CPXwriteprob(env, lp, "qgap.lp", NULL);
+      if (status)
+      {  fprintf(stderr, "Failed to write LP to disk.\n");
+         goto TERMINATE;
+      }
 
    // 1: assumes that the model is convex and searches for a globally optimal solution.
    // 2: Searches for a solution that satisfies first-order optimality conditions, but is not necessarily globally optimal.
@@ -144,8 +145,14 @@ int QuadraticGAP::Qopt (void)
             break;
       }
 
-   // max cplex time: 600 seconds
-   status = CPXsetintparam(env, CPXPARAM_TimeLimit, 600);   
+   // max cplex time: 60 seconds
+   //status = CPXsetintparam(env, CPXPARAM_TimeLimit, 60);   // max cpu time, can't make this work
+   status = CPXsetintparam(env, CPXPARAM_MIP_Limits_Nodes, 600);   // max num of nodes
+   //status = CPXsetintparam(env,    CPXPARAM_DetTimeLimit, 20000);  // max cpu absolute time (ticks), can't make this work
+   if (status)
+   {  fprintf(stderr, "Failure to reset cpu max time, error %d.\n", status);
+      goto TERMINATE;
+   }
 
    // Optimize the problem and obtain solution.
    if(optimality_target > 1)
@@ -161,6 +168,8 @@ int QuadraticGAP::Qopt (void)
 
    cur_numrows = CPXgetnumrows(env, lp);
    cur_numcols = CPXgetnumcols(env, lp);
+
+   int nn = CPXgetsolnpoolnumsolns(env, lp);
 
    x     = (double *)malloc(cur_numcols * sizeof(double));
    slack = (double *)malloc(cur_numrows * sizeof(double));
@@ -317,9 +326,9 @@ int QuadraticGAP::setproblemdata(char **probname_p, int *numcols_p, int *numrows
             {
                zqmatind[numNZ] = hk;
                if (cqf != NULL)
-                  zqmatval[numNZ] = cqd[i][h] * cqf[j][k]; // d_ih f_jk input format
+                  zqmatval[numNZ] = 2 * cqd[i][h] * cqf[j][k]; // d_ih f_jk input format MIND THE 2*
                else
-                  zqmatval[numNZ] = cqd[ij][hk];           // c_ijhk input format
+                  zqmatval[numNZ] = 2 * cqd[ij][hk];           // c_ijhk input format    MIND THE 2*
                numNZ++;
                hk++;
             }
@@ -515,10 +524,11 @@ int QuadraticGAP::checkfeas(double* x, double solcost)
    // controllo capacità
    for (j = 0; j<n; j++)
    {  for(i=0;i<m;i++)
-         capused[i] += x[i*m+j]*req[i][j];
-      if (capused[i] > cap[i])
-      {  res = 3;       // capacity exceeded
-         goto lend;
+      {  capused[i] += x[i*m+j]*req[i][j];
+         if (capused[i] > cap[i])
+         {  res = 3;       // capacity exceeded
+            goto lend;
+         }
       }
    }
    delete capused;
@@ -526,7 +536,7 @@ int QuadraticGAP::checkfeas(double* x, double solcost)
    // check cost
    for(i=0;i<m;i++)
       for(j=0;j<n;j++)
-      {  cost += cl[i][j];
+      {  cost += cl[i][j]*x[i*m+j];
 
          for(int h=0;h<m;h++)
             for(int k=0;k<n;k++)
