@@ -203,6 +203,7 @@ int QuadraticGAP::Qopt (void)
       cout << "Solution infeasible !!! status = " << status << endl;
       //goto TERMINATE;
    }
+   else cout << "Solution checked, status " << status << " cost " << objval << endl;
 
    // Write the output to the screen.
    cout << "\nSolution status = " << solstat << endl;
@@ -453,9 +454,11 @@ double QuadraticGAP::eigenValues(double *qmatval, int n)
          k++;
       }
 
+   cout << "Computing determinant" << endl;
    double det = mat.determinant();
    cout << "Determinant: " << det << endl;
 
+   cout << "Computing eigenvalues" << endl;
    Eigen::MatrixXd M = m + m.transpose();
    // Construct matrix operation object 
    DenseSymMatProd<double> op(M);
@@ -486,6 +489,8 @@ double QuadraticGAP::eigenValues(double *qmatval, int n)
             else
                qmatval[i*n + j] *= 2;  // all other coefficients will be doubled
 
+   cout << "Eigenvalues completed" << endl;
+
    return evalues[0];
 }
 
@@ -508,10 +513,9 @@ int QuadraticGAP::checkfeas(double* x, double solcost)
    bool isInteger = true;  // have got an integer solution
 
    for (i = 0; i<m; i++) 
-   {
-      capused[i] = 0;
+   {  capused[i] = 0;
       for(j=0;j<n;j++)
-         if(abs(x[i*m+j]-trunc(x[i*m+j]) > EPS) )
+         if(abs(x[i*n+j]-trunc(x[i*n+j]) > EPS) )
             isInteger = false;
    }
 
@@ -519,7 +523,7 @@ int QuadraticGAP::checkfeas(double* x, double solcost)
       for(j=0;j<n;j++)
       {  sol[j] = -1;
          for(i=0;i<m;i++)
-            if(x[i*m+j] > EPS)
+            if(x[i*n+j] > EPS)
                if(sol[j] > EPS)
                {  res = 1;       // multiple assignment of some client
                   goto lend;
@@ -539,7 +543,7 @@ int QuadraticGAP::checkfeas(double* x, double solcost)
    // controllo capacità
    for (j = 0; j<n; j++)
    {  for(i=0;i<m;i++)
-      {  capused[i] += x[i*m+j]*req[i][j];
+      {  capused[i] += x[i*n+j]*req[i][j];
          if (capused[i] > cap[i])
          {  res = 3;       // capacity exceeded
             goto lend;
@@ -551,11 +555,11 @@ int QuadraticGAP::checkfeas(double* x, double solcost)
    // check cost
    for(i=0;i<m;i++)
       for(j=0;j<n;j++)
-      {  cost += cl[i][j]*x[i*m+j];
+      {  cost += cl[i][j]*x[i*n+j];
 
          for(int h=0;h<m;h++)
             for(int k=0;k<n;k++)
-               cost += cqd[i][h]*cqf[j][k]*x[i*m+j]*x[h*m+k];
+               cost += cqd[i][h]*cqf[j][k]*x[i*n+j]*x[h*n+k];
       }
 
    if (abs(solcost - cost) > EPS)
