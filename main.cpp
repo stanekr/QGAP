@@ -7,13 +7,28 @@ int main()
    DataManager*  DM   = new DataManager();
    DM->QGAP = QGAP;
    DM->loadConfig();
-   if(QGAP->conf->mode == 1)
+   int res;
+
+   switch(QGAP->conf->mode) 
    {
-      DM->readJSONdata(QGAP->conf->datapath + QGAP->conf->datafile);
-      QGAP->Qopt();
+      case 1:     // optimizing instance
+         DM->readJSONdata(QGAP->conf->datapath + QGAP->conf->datafile);
+         QGAP->Qopt();
+         break;
+      case 2:     // transcoding instance format
+         DM->transcode(QGAP->conf->datapath + QGAP->conf->datafile);
+         break;
+      case 3:     // checking ampl solution
+      {  string str = QGAP->conf->datafile;
+         DM->readJSONdata(QGAP->conf->datapath + str.replace(str.find("sol"), 3, "json"));
+         res = DM->readAmplSol(QGAP->conf->datapath + QGAP->conf->datafile);
+         break;
+      }
+      default:
+         cout << "Usupported use mode" << endl;
+         break;
    }
-   else
-      DM->transcode(QGAP->conf->datapath + QGAP->conf->datafile);
+
    cout << "\n<ENTER> to exit ..."; cin.get();
 
    delete QGAP;

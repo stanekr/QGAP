@@ -17,6 +17,7 @@ public:
    Config* loadConfig();
    void readJSONdata(string);
    void transcode(string infile);
+   int readAmplSol(string infile);
 
    QuadraticGAP* QGAP;
 

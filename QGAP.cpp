@@ -1,4 +1,5 @@
 #include "QGAP.h"
+#include "HeuMagnify.h"
 #include <Eigen/Core>
 #include <Eigen/LU>         // for the determinant
 #include <SymEigsSolver.h>  // Also includes <MatOp/DenseSymMatProd.h>
@@ -123,6 +124,13 @@ int QuadraticGAP::Qopt (void)
          goto TERMINATE;
       }
 
+   if (optimality_target==4)     // magnifying glass heuristic
+   {  HeuMagnify* HMG;
+      HMG = new HeuMagnify(this);
+      HMG->MagniGlass(env,lp,conf->maxnodes,3); // always QP opt
+      delete HMG;
+      goto TERMINATE;
+   }
    // 1: assumes that the model is convex and searches for a globally optimal solution.
    // 2: Searches for a solution that satisfies first-order optimality conditions, but is not necessarily globally optimal.
    // 3: Searches for a globally optimal solution to a nonconvex model; changes problem type to MIQP if necessary.
@@ -147,7 +155,7 @@ int QuadraticGAP::Qopt (void)
 
    // max cplex time: 60 seconds
    //status = CPXsetintparam(env, CPXPARAM_TimeLimit, 60);   // max cpu time, can't make this work
-   status = CPXsetintparam(env, CPXPARAM_MIP_Limits_Nodes, 600);   // max num of nodes
+   status = CPXsetintparam(env, CPXPARAM_MIP_Limits_Nodes, conf->maxnodes);   // max num of nodes
    //status = CPXsetintparam(env,    CPXPARAM_DetTimeLimit, 20000);  // max cpu absolute time (ticks), can't make this work
    if (status)
    {  fprintf(stderr, "Failure to reset cpu max time, error %d.\n", status);
@@ -436,21 +444,11 @@ TERMINATE:
 double QuadraticGAP::eigenValues(double *qmatval, int n)
 {  int i,j,k;
 
-   Eigen::MatrixXd m = Eigen::MatrixXd(n, n);
-   m(0, 0) = 1; m(0, 1) = 4; m(0, 2) = 6; m(0, 3) = 4; m(0, 4) = 8; m(0, 5) = 12;
-   m(1, 0) = 4; m(1, 1) = 1; m(1, 2) = 4; m(1, 3) = 8; m(1, 4) = 4; m(1, 5) = 8;
-   m(2, 0) = 6; m(2, 1) = 4; m(2, 2) = 1; m(2, 3) = 12; m(2, 4) = 8; m(2, 5) = 4;
-   m(3, 0) = 4; m(3, 1) = 8; m(3, 2) = 12; m(3, 3) = 1; m(3, 4) = 4; m(3, 5) = 6;
-   m(4, 0) = 8; m(4, 1) = 4; m(4, 2) = 8; m(4, 3) = 4; m(4, 4) = 1; m(4, 5) = 4;
-   m(5, 0) = 12; m(5, 1) = 8; m(5, 2) = 4; m(5, 3) = 6; m(5, 4) = 4; m(5, 5) = 1;
-
    Eigen::MatrixXd mat = Eigen::MatrixXd(n, n);
    k = 0;
    for(i=0;i<n;i++)
       for(j=0;j<n;j++)
       {  mat(i,j) = qmatval[k];
-         //if(mat(i,j) != m(i,j)/2)
-         //   cout << "ouch" << endl;
          k++;
       }
 
@@ -459,7 +457,7 @@ double QuadraticGAP::eigenValues(double *qmatval, int n)
    cout << "Determinant: " << det << endl;
 
    cout << "Computing eigenvalues" << endl;
-   Eigen::MatrixXd M = m + m.transpose();
+   Eigen::MatrixXd M = mat + mat.transpose();
    // Construct matrix operation object 
    DenseSymMatProd<double> op(M);
 

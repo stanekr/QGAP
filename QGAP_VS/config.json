@@ -1,7 +1,8 @@
 {
    "datapath"  : "c:/AAAToBackup/ricerche/GAP/quadratic/instances/",
    "datafile"  : "cordeau/20-15-35.json",
-   "mode"      : 1, "_commentMode" : "1 optimize, 2 transcode",
-   "opt_target": 3, "_commentOpt"  : "1 mipopt, 2 linear, 3 integer",
+   "mode"      : 1, "_commentMode" : "1 optimize, 2 transcode, 3 check ampl sol",
+   "opt_target": 4, "_commentOpt"  : "1 mipopt, 2 linear, 3 integer, 4 MagniGlass",
+   "maxnodes"  : 500,
    "isverbose" : 1
 }
