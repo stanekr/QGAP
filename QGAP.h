@@ -17,6 +17,7 @@ public:
    int mode;         // usage mode: 1 optimize, 2 transcode
    int opt_target;   // optimality target
    int isverbose;    // console output detail
+   int maxnodes;     // max num of nodes expanded in the tree search
 };
 
 class QuadraticGAP
@@ -38,6 +39,7 @@ public:
    Config* conf;
 
    int QuadraticGAP::Qopt(void);
+   int QuadraticGAP::checkfeas(double* x, double cost);
 
 protected:
 private:
@@ -48,7 +50,6 @@ private:
       double **ub_p, char **ctype_p, int **qmatbeg_p, int **qmatcnt_p,
       int **qmatind_p, double **qmatval_p);
    double eigenValues(double *qmatval, int n);
-   int QuadraticGAP::checkfeas(double* x, double cost);
 
    int optimality_target;  // convex function or not
    double EPS = 0.0001;

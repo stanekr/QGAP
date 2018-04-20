@@ -31,6 +31,7 @@ Config* DataManager::loadConfig()
    QGAP->conf->datapath = JSV["datapath"];
    QGAP->conf->datafile = JSV["datafile"];
    QGAP->conf->mode     = JSV["mode"];
+   QGAP->conf->maxnodes = JSV["maxnodes"];
    QGAP->conf->opt_target = JSV["opt_target"];
    QGAP->conf->isverbose  = JSV["isverbose"];
    return QGAP->conf;
@@ -642,3 +643,80 @@ void DataManager::leeMa2json(string infile)
    json2ampl(infile+".json");
 }
 
+int DataManager::readAmplSol(string infile)
+{
+   string line;
+   int i,j,m,n,maxj=0,res;
+   vector<string> elem;
+   vector<vector<double>> sol;
+   double cost;
+
+   // data reading section
+   ifstream amplFile;
+   amplFile.open(infile);
+   amplFile.exceptions(ifstream::eofbit | ifstream::failbit | ifstream::badbit);
+
+   do
+   {
+      do       // positioning on the first significant line
+      {
+         getline(amplFile, line);
+         line = Trim(line);
+         cout << line << endl;
+      }
+      while(line.substr(0,1) != "1");
+
+      do       // actual reading
+      {
+         cout << line << endl;
+         elem = split(line, " ");
+         m = elem.size() - 1;
+         i = atoi(elem[0].c_str());
+         if(sol.size() < i)
+            sol.push_back(vector<double>());
+         for (j = 0; j<m; j++)
+            sol[i-1].push_back(atof(elem[j + 1].c_str()));
+         getline(amplFile, line);
+         line = Trim(line);
+      } while (line.find(".") != string::npos);
+      maxj += m;
+
+   } while (maxj < QGAP->n);
+
+   getline(amplFile, line);
+   line = Trim(line);
+   cost = atof(line.c_str() );
+
+   double   *x  = NULL;
+   x = (double *)malloc(QGAP->n * QGAP->m * sizeof(double));
+   for(i=0;i<QGAP->m;i++)
+      for(j=0;j<QGAP->n;j++)
+         x[i*QGAP->n+j] = sol[i][j];
+
+   res = QGAP->checkfeas(x, cost);
+   free_and_null((char **)&x);
+   amplFile.close();
+
+   switch(res) 
+   {
+      case 1:
+         cout << "Multiple assignment of some client" << endl;
+         break;
+      case 2:    
+         cout << "client assignment to a non-server" << endl;
+         break;
+      case 3:    
+         cout << "capacity exceeded" << endl;
+         break;
+      case 4:    
+         cout << "unaligned costs" << endl;
+         break;
+      case 0:    
+         cout << "Check passed, everything OK" << endl;
+         break;
+      default:
+         cout << "Something went wrong" << endl;
+         break;
+   }
+   return res;
+}
