@@ -102,7 +102,7 @@ void HeuMagnify::MagniGlass(CPXENVptr env, CPXLPptr lp, int maxnodes, int optima
             cnt++;
          }
    status = CPXchgbds (env, lp, cnt, indices, lu, bd);
-   // status = CPXqpopt(env, lp); // in case of non convex function (opt target > 1)
+   status = CPXqpopt(env, lp); // in case of non convex function (opt target > 1)
 
 TERMINATE:
    free_and_null((char **)&x);
