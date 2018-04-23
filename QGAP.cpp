@@ -266,10 +266,8 @@ TERMINATE:
 }  
 
 int QuadraticGAP::setproblemdata(char **probname_p, int *numcols_p, int *numrows_p,
-   int *objsen_p, double **obj_p, double **rhs_p,
-   char **sense_p, int **matbeg_p, int **matcnt_p,
-   int **matind_p, double **matval_p, double **lb_p,
-   double **ub_p, char **ctype_p, int **qmatbeg_p, int **qmatcnt_p,
+   int *objsen_p, double **obj_p, double **rhs_p, char **sense_p, int **matbeg_p, int **matcnt_p,
+   int **matind_p, double **matval_p, double **lb_p, double **ub_p, char **ctype_p, int **qmatbeg_p, int **qmatcnt_p,
    int **qmatind_p, double **qmatval_p)
 {
    int i,j,h,k,ij,hk,idRow,idCol;

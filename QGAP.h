@@ -35,6 +35,10 @@ public:
    double** cqd; // quadratic assignment costs, distances
    int** req;    // client requests
    int*  cap;    // server capacities
+   double EPS = 0.0001;
+
+   double zub;          // best upper bound cost
+   vector<int> solbest; // best upper bound solution
 
    Config* conf;
 
@@ -52,7 +56,7 @@ private:
    double eigenValues(double *qmatval, int n);
 
    int optimality_target;  // convex function or not
-   double EPS = 0.0001;
+
 };
 
 // free
