@@ -34,6 +34,8 @@ Config* DataManager::loadConfig()
    QGAP->conf->maxnodes = JSV["maxnodes"];
    QGAP->conf->opt_target = JSV["opt_target"];
    QGAP->conf->isverbose  = JSV["isverbose"];
+
+   srand(550);
    return QGAP->conf;
 }
 
@@ -41,7 +43,7 @@ Config* DataManager::loadConfig()
 void DataManager::readJSONdata(string infile)
 {
    string line;
-   size_t i, j, cont;
+   size_t i, j;
    int format;
 
    try
@@ -64,6 +66,7 @@ void DataManager::readJSONdata(string infile)
    QGAP->name = JSV["name"];
    QGAP->n = JSV["numcli"];
    QGAP->m = JSV["numserv"];
+   QGAP->zub = DBL_MAX;
    format  = JSV["format"];   // 1: single quad matrix, 2 two matrices to multiply
    QGAP->cap = (int*)malloc(QGAP->m * sizeof(int));
    for (i = 0; i<JSV["cap"].size(); i++)
@@ -169,7 +172,7 @@ void DataManager::transcode(string infile)
 }
 
 void DataManager::json2ampl(string infile)
-{  int i,j,h,k,n,m;
+{  int i,j,n,m;
 
    readJSONdata(infile);
    if(QGAP->cqf == NULL)
@@ -399,46 +402,46 @@ void DataManager::ampl2json(string infile)
    obj["format"]  = 2;
 
    json::Array jcostlin;
-   for (int i = 0; i<clin.size(); i++)
+   for (size_t i = 0; i<clin.size(); i++)
    {  json::Array vec;
-      for (int j = 0; j<clin[i].size(); j++)
+      for (size_t j = 0; j<clin[i].size(); j++)
          vec.push_back(clin[i][j]);
       jcostlin.push_back(vec);
    }   
    obj["costlin"] = jcostlin;
 
    json::Array jcostqd;
-   for (int i = 0; i<cqd.size(); i++)
+   for (size_t i = 0; i<cqd.size(); i++)
    {
       json::Array vec;
-      for (int j = 0; j<cqd[i].size(); j++)
+      for (size_t j = 0; j<cqd[i].size(); j++)
          vec.push_back(cqd[i][j]);
       jcostqd.push_back(vec);
    }
    obj["costqd"] = jcostqd;
 
    json::Array jcostqf;
-   for (int i = 0; i<cqf.size(); i++)
+   for (size_t i = 0; i<cqf.size(); i++)
    {
       json::Array vec;
-      for (int j = 0; j<cqf[i].size(); j++)
+      for (size_t j = 0; j<cqf[i].size(); j++)
          vec.push_back(cqf[i][j]);
       jcostqf.push_back(vec);
    }
    obj["costqf"] = jcostqf;
 
    json::Array jreq;
-   for (int i = 0; i<req.size(); i++)
+   for (size_t i = 0; i<req.size(); i++)
    {
       json::Array vec;
-      for (int j = 0; j<req[i].size(); j++)
+      for (size_t j = 0; j<req[i].size(); j++)
          vec.push_back(req[i][j]);
       jreq.push_back(vec);
    }
    obj["req"] = jreq;
 
    json::Array jcap;
-   for (int i = 0; i<cap.size(); i++)
+   for (size_t i = 0; i<cap.size(); i++)
       jcap.push_back(cap[i]);
    obj["cap"] = jcap;
 

@@ -31,6 +31,6 @@ int main()
 
    cout << "\n<ENTER> to exit ..."; cin.get();
 
-   delete QGAP;
    delete DM;
+   delete QGAP;
 }
