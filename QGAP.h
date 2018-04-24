@@ -18,6 +18,7 @@ public:
    int opt_target;   // optimality target
    int isverbose;    // console output detail
    int maxnodes;     // max num of nodes expanded in the tree search
+   int maxiter;      // max num of iteration of the heuristic
 };
 
 class QuadraticGAP
