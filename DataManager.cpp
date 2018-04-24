@@ -32,6 +32,7 @@ Config* DataManager::loadConfig()
    QGAP->conf->datafile = JSV["datafile"];
    QGAP->conf->mode     = JSV["mode"];
    QGAP->conf->maxnodes = JSV["maxnodes"];
+   QGAP->conf->maxiter  = JSV["maxiter"];
    QGAP->conf->opt_target = JSV["opt_target"];
    QGAP->conf->isverbose  = JSV["isverbose"];
 

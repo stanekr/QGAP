@@ -43,7 +43,6 @@ void HeuMagnify::MagniGlass(CPXENVptr env, CPXLPptr lp, int maxnodes, int optima
 
    if(objval > DBL_MAX - QGAP->EPS)    // in case no solution was constructed
    {
-
       // Optimize the problem and obtain solution.
       if(optimality_target > 1)
          status = CPXqpopt(env, lp); // in case of non convex function (opt target > 1)
@@ -94,16 +93,19 @@ void HeuMagnify::MagniGlass(CPXENVptr env, CPXLPptr lp, int maxnodes, int optima
       cout << x[i] << " ";
    cout << endl;
 
+   // output to the screen
+   status = CPXsetintparam(env, CPXPARAM_ScreenOutput,QGAP->conf->isverbose); // CPX_ON, CPX_OFF
+
    // lu[j] 	= 'L' 	bd[j] is a lower bound
    // lu[j] 	= 'U' 	bd[j] is an upper bound
    // lu[j] 	= 'B' 	bd[j] is the lower and upper bound
-   int  iter,cnt,maxiter = 5;
+   int  iter,cnt,maxiter = QGAP->conf->maxiter;
    double p;
 
-   cnt = iter = 0;
-
+   iter = 0;
    do
-   {
+   {  cout << "iter " << iter << " zub " << QGAP->zub << endl;
+      cnt = 0;
       for(i=0;i<m;i++)
          for(j=0;j<n;j++)
          {  p = rand()/(1.0*RAND_MAX) ;
@@ -147,7 +149,6 @@ void HeuMagnify::MagniGlass(CPXENVptr env, CPXLPptr lp, int maxnodes, int optima
       iter++;
    }
    while (iter < maxiter);
-
 
    cout << "Solution cost " << objval << " zub " << QGAP->zub << endl;
 
