@@ -1,8 +1,16 @@
 #include "QGAP.h"
-#include "HeuMagnify.h"
+#ifdef LINUX
+#include "Eigen/Core"
+#include "Eigen/LU"         // for the determinant
+#include "SymEigsSolver.h"  // Also includes <MatOp/DenseSymMatProd.h>
+#else
 #include <Eigen/Core>
 #include <Eigen/LU>         // for the determinant
 #include <SymEigsSolver.h>  // Also includes <MatOp/DenseSymMatProd.h>
+#endif
+#include <cfloat>
+
+#include "HeuMagnify.h"
 
 using Eigen::MatrixXd;
 using namespace Spectra;
@@ -536,7 +544,7 @@ int QuadraticGAP::checkfeas(double* x, double solcost)
             goto lend;
          }
 
-   // controllo capacità
+   // controllo capacitï¿½
    for (j = 0; j<n; j++)
    {  for(i=0;i<m;i++)
       {  capused[i] += x[i*n+j]*req[i][j];

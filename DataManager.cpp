@@ -1,5 +1,7 @@
 #include "DataManager.h"
 #include <stdexcept>
+#include <cfloat>
+#include <cstring>
 
 DataManager::DataManager()
 {
@@ -16,7 +18,11 @@ Config* DataManager::loadConfig()
 {
    string infile, line;
 
+#ifdef LINUX
+   infile = "QGAP_VS/config.json";
+#else
    infile = "config.json";
+#endif
    cout << "Opening " << infile << endl;
 
    ifstream jData(infile.c_str());
@@ -28,9 +34,11 @@ Config* DataManager::loadConfig()
 
    json::Value JSV = json::Deserialize(line);
 
-   QGAP->conf->datapath = JSV["datapath"];
-   QGAP->conf->datafile = JSV["datafile"];
-   QGAP->conf->mode     = JSV["mode"];
+   string tempDatapath = JSV["datapath"];
+   QGAP->conf->datapath = tempDatapath;
+   string tempDatafile = JSV["datafile"];
+   QGAP->conf->datafile = tempDatafile;
+   QGAP->conf->mode = JSV["mode"];
    QGAP->conf->maxnodes = JSV["maxnodes"];
    QGAP->conf->maxiter  = JSV["maxiter"];
    QGAP->conf->opt_target = JSV["opt_target"];
@@ -64,7 +72,8 @@ void DataManager::readJSONdata(string infile)
    }
 
    json::Value JSV = json::Deserialize(line);
-   QGAP->name = JSV["name"];
+   string tempName = JSV["name"];
+   QGAP->name = tempName;
    QGAP->n = JSV["numcli"];
    QGAP->m = JSV["numserv"];
    QGAP->zub = DBL_MAX;

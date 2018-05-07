@@ -1,11 +1,16 @@
 #ifndef HEUMAG_H
 #define HEUMAG_H
 
+#ifdef LINUX
+#include "cplex.h"
+#else
 #include "c:/IBM/ILOG/CPLEX_Studio1263/cplex/include/ilcplex/cplex.h"
+#endif
 #include <iostream>
 #include <string>
 #include <vector>
 #include <algorithm> // sort
+
 #include "QGAP.h"
 
 using namespace std;

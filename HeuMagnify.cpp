@@ -1,3 +1,4 @@
+#include <cfloat>
 #include "HeuMagnify.h"
 
 HeuMagnify::HeuMagnify(QuadraticGAP* QGAPinst)

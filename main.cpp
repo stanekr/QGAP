@@ -1,4 +1,5 @@
 #include <iostream>
+
 #include "QGAP.h"
 #include "DataManager.h"
 

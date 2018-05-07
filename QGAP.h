@@ -1,7 +1,11 @@
 #ifndef QGAP_H
 #define QGAP_H
 
+#ifdef LINUX
+#include "/opt/ibm/ILOG/CPLEX_Studio128/cplex/include/ilcplex/cplex.h"
+#else
 #include "c:/IBM/ILOG/CPLEX_Studio1263/cplex/include/ilcplex/cplex.h"
+#endif
 #include <iostream>
 #include <fstream>   // ifstream
 #include <string>
@@ -43,12 +47,12 @@ public:
 
    Config* conf;
 
-   int QuadraticGAP::Qopt(void);
-   int QuadraticGAP::checkfeas(double* x, double cost);
+   int Qopt(void);
+   int checkfeas(double* x, double solcost);
 
 protected:
 private:
-   int QuadraticGAP::setproblemdata(char **probname_p, int *numcols_p, int *numrows_p,
+   int setproblemdata(char **probname_p, int *numcols_p, int *numrows_p,
       int *objsen_p, double **obj_p, double **rhs_p,
       char **sense_p, int **matbeg_p, int **matcnt_p,
       int **matind_p, double **matval_p, double **lb_p,
